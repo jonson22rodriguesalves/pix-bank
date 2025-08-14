@@ -1,8 +1,8 @@
 package repository;
 
-import expcetion.AccountWithInvestmentException;
-import expcetion.InvestmentNotFoundException;
-import expcetion.WalletNotFoundException;
+import exception.AccountWithInvestmentException;
+import exception.InvestmentNotFoundException;
+import exception.WalletNotFoundException;
 import model.AccountWallet;
 import model.Investment;
 import model.InvestmentWallet;
@@ -18,9 +18,9 @@ public class InvestmentRepository {
     private final List<Investment> investments = new ArrayList<>();
     private final List<InvestmentWallet> wallets =  new ArrayList<>();
 
-    public Investment create(final long tax, final long initialFunds){
+    public Investment create(final long tax, final long initialFunds, final String nome){
         this.nextId ++;
-        var investment = new Investment(this.nextId, tax, initialFunds);
+        var investment = new Investment(this.nextId, tax, initialFunds, nome);
         investments.add(investment);
         return investment;
     }
@@ -29,7 +29,7 @@ public class InvestmentRepository {
         if (!wallets.isEmpty()) {
             var accountsInUse = wallets.stream().map(InvestmentWallet::getAccount).toList();
             if (accountsInUse.contains(account)) {
-                throw new AccountWithInvestmentException("A conta'" + account + "'já possui um investimento");
+                throw new AccountWithInvestmentException("A conta'" + account + "'ja possui um investimento");
             }
         }
         var investment = findById(id);
@@ -39,17 +39,33 @@ public class InvestmentRepository {
         return wallet;
     }
 
-    public InvestmentWallet deposit(final String pix, final long funds){
+    public InvestmentWallet deposit(final String pix, final long funds) {
         var wallet = findWalletByAccountPix(pix);
-        wallet.addMoney(wallet.getAccount().reduceMoney(funds), wallet.getService(), "Investimento");
+
+        // Descrição para a operação na conta origem
+        String withdrawalDescription = "Aplicação em investimento via PIX conta: " + pix + "\n Aporte de R$ " + (funds) + "," + String.format("%02d", funds%100);
+
+        // Remove o valor da conta com registro no histórico
+        long transferredAmount = wallet.getAccount().reduceMoney(funds, withdrawalDescription);
+
+        // Descrição para a operação no investimento
+        String depositDescription = "Aporte de R$" + (funds/100) + "," + String.format("%02d", funds%100);
+
+        // Adiciona na carteira de investimento
+        wallet.addMoney(transferredAmount, depositDescription);
+
         return wallet;
     }
 
-    public InvestmentWallet withdraw(final String pix, final long funds){
+    public InvestmentWallet withdraw(final String pix, final long funds, String investmentDescription) {
         var wallet = findWalletByAccountPix(pix);
         checkFundsForTransaction(wallet, funds);
-        wallet.getAccount().addMoney(wallet.reduceMoney(funds), wallet.getService(), "saque de investimentos");
-        if (wallet.getFunds() == 0){
+
+        // Remove o valor da carteira de investimento e devolve para a conta
+        long withdrawnAmount = wallet.reduceMoney(funds);
+        wallet.getAccount().addMoney(withdrawnAmount, "saque de investimentos");
+
+        if (wallet.getFunds() == 0) {
             wallets.remove(wallet);
         }
         return wallet;
@@ -63,7 +79,7 @@ public class InvestmentRepository {
         return investments.stream().filter(a -> a.id() == id)
                 .findFirst()
                 .orElseThrow(
-                        () -> new InvestmentNotFoundException("O investimento '" + id + "' não foi encontrado")
+                        () -> new InvestmentNotFoundException("O investimento '" + id + "' nao foi encontrado")
                 );
     }
 
@@ -72,7 +88,7 @@ public class InvestmentRepository {
                 .filter(w -> w.getAccount().getPix().contains(pix))
                 .findFirst()
                 .orElseThrow(
-                        () -> new WalletNotFoundException("A carteira não foi encontrada")
+                        () -> new WalletNotFoundException("A carteira nao foi encontrada")
                 );
     }
 

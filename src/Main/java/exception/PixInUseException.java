@@ -1,4 +1,4 @@
-package expcetion;
+package exception;
 
 public class PixInUseException extends RuntimeException {
 
