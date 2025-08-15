@@ -18,41 +18,42 @@ public class Main {
     static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        System.out.println("\nBEM VINDO AO PIX BANK\n");
+        System.out.println("\n============ MENU PIX BANK ============\n");
         while (true){
             System.out.println("Selecione a opcao desejada");
-            System.out.println("1 - Criar uma conta");
-            System.out.println("2 - Depositar na conta");
-            System.out.println("3 - Sacar da conta");
-            System.out.println("4 - Transferencia entre contas");
-            System.out.println("5 - Listar contas");
-            System.out.println("6 - Historico de conta");
-            System.out.println("7 - Criar uma carteira de investimento");
-            System.out.println("8 - Criar uma modalidade de Investimento");
-            System.out.println("9 - Investir");
-            System.out.println("10 - Sacar investimento");
-            System.out.println("11 - Atualizar investimentos");
-            System.out.println("12 - Listar modalidade de Investimento");
-            System.out.println("13 - Listar carteiras de investimento");
+            System.out.println("1 - Cadastrar nova conta");
+            System.out.println("2 - Realizar deposito");
+            System.out.println("3 - Realizar saque");
+            System.out.println("4 - Transferencia PIX");
+            System.out.println("5 - Consultar contas cadastradas");
+            System.out.println("6 - Extrato da conta");
+            System.out.println("7 - Criar carteira de investimento");
+            System.out.println("8 - Cadastrar tipo de investimento");
+            System.out.println("9 - Aplicar em investimento");
+            System.out.println("10 - Resgatar investimento");
+            System.out.println("11 - Atualizar rendimentos");
+            System.out.println("12 - Consultar carteira de investimento");
+            System.out.println("13 - Listar tipos de investimento");
+            System.out.println("14 - Listar todas as carteiras de investimento");
+            System.out.println("15 - Sair do sistema");
 
-
-            System.out.println("14 - Sair");
             var option= scanner.nextInt();
             switch (option){
                 case 1 -> createAccount();
                 case 2 -> deposit();
                 case 3 -> withdraw();
                 case 4 -> transferToAccount();
-                case 5 -> listarConta();
+                case 5 -> accountList();
                 case 6 -> checkHistory();
                 case 7 -> createWalletInvestment();
                 case 8 -> createInvestment();
-                case 9 -> investment();
+                case 9 -> applyInvestment();
                 case 10 -> rescueInvestment();
-                case 11 -> atualizarInvestment();
-                case 12 -> listarModalidadeInvestment();
-                case 13 -> listarWalletInvestment();
-                case 14 -> System.exit(0);
+                case 11 -> updateYield();
+                case 12 -> consultWalletInvestment();
+                case 13 -> listTypeInvestment();
+                case 14 -> listWalletInvestment();
+                case 15 -> System.exit(0);
                 default -> System.out.println("Opção inválida");
 
             }
@@ -217,7 +218,7 @@ public class Main {
         }
     }
 
-    private static void listarConta(){
+    private static void accountList(){
         System.out.println("\n--------------- Contas ---------------");
         accountRepository.list().forEach(account ->
                 System.out.println("AccountWallet{pix=" + account.getPix() +
@@ -344,7 +345,7 @@ public class Main {
         }
     }
 
-    private static void investment() {
+    private static void applyInvestment() {
         try {
             System.out.println("Informe a chave pix da conta para investimento:");
             // Limpar buffer do scanner
@@ -429,17 +430,39 @@ public class Main {
         }
     }
 
-    private static void atualizarInvestment(){
+    private static void updateYield(){
 
             investmentRepository.updateAmount();
-            System.out.println("Investimentos reajustados");
+            System.out.println("\n--------------- Investimentos Reajustados ---------------\n");
     }
 
-    private static void listarModalidadeInvestment(){
+    private static void consultWalletInvestment(){
+        try {
+            System.out.println("\n--------------- Investimentos Reajustados ---------------");
+
+            investmentRepository.listWallets().forEach(wallet -> {
+                System.out.println("Conta PIX: " + wallet.getAccount().getPix().get(0)); // Pega a primeira chave PIX
+                System.out.println("Tipo de Investimento: " + wallet.getInvestment().nome());
+                System.out.println("Taxa aplicada: " + wallet.getInvestment().tax() + "%");
+                System.out.println("Saldo do Investimento: R$" + (wallet.getFunds() / 100) + "," +
+                        String.format("%02d", wallet.getFunds() % 100));
+                System.out.println("Saldo da Conta: R$" + (wallet.getAccount().getFunds() / 100) + "," +
+                        String.format("%02d", wallet.getAccount().getFunds() % 100));
+                System.out.println("---------------------------------------------------------");
+            });
+
+            System.out.println("---------------------------------------------------------\n");
+        } catch (Exception e) {
+            System.err.println("Erro ao atualizar investimentos: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static void listTypeInvestment(){
         investmentRepository.list().forEach(System.out::println);
     }
 
-    private static void listarWalletInvestment(){
+    private static void listWalletInvestment(){
         investmentRepository.listWallets().forEach(System.out::println);
     }
 
