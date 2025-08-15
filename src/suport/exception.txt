@@ -1,0 +1,6 @@
+AccountNotFoundException ("ContaNãoEncontradaExceção");
+AccountWithInvestmentException("ContaComExceçãoDeInvestimento");
+Investment Not Found Exception("Exceção de Investimento Não Encontrado");
+NoFundsEnoughException("Exceção de fundos insuficientes");
+PixInUseException("Exceção de Pix em uso");
+WalletNotFoundException("Exceção de carteira não encontrada");
