@@ -1,5 +1,4 @@
 import exception.*;
-import model.AccountWallet;
 import model.BankService;
 import model.InvestmentWallet;
 import model.MoneyAudit;
@@ -13,13 +12,32 @@ import java.util.*;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
 
+/**
+ * Classe principal que representa o sistema bancário PIX Bank.
+ * Contém o menu principal e métodos para operações bancárias e de investimento.
+ */
 public class Main {
 
+    /**
+     * Repositório de contas bancárias.
+     */
     private final static AccountRepository accountRepository = new AccountRepository();
+
+    /**
+     * Repositório de investimentos.
+     */
     private final static InvestmentRepository investmentRepository = new InvestmentRepository();
 
+    /**
+     * Scanner para entrada de dados do usuário.
+     */
     static Scanner scanner = new Scanner(System.in);
 
+    /**
+     * Método principal que inicia a aplicação.
+     *
+     * @param args Argumentos da linha de comando (não utilizados).
+     */
     public static void main(String[] args) {
         System.out.println("\n============ MENU PIX BANK ============\n");
         while (true){
@@ -63,6 +81,9 @@ public class Main {
         }
     }
 
+    /**
+     * Cria uma nova conta bancária com chaves PIX.
+     */
     private static void createAccount() {
         try {
             System.out.println("Informe as chaves pix (separadas por ';' Exemplo: CPF00000000000;Email@meu.com;tel999999999");
@@ -128,7 +149,9 @@ public class Main {
         }
     }
 
-
+    /**
+     * Realiza um depósito em uma conta existente.
+     */
     private static void deposit() {
         try {
             System.out.println("Informe a chave pix da conta para depósito:");
@@ -176,14 +199,17 @@ public class Main {
         }
     }
 
+    /**
+     * Realiza um saque de uma conta existente.
+     */
     private static void withdraw(){
         try{
-        System.out.println("Informe a chave pix da conta para saque:");
+            System.out.println("Informe a chave pix da conta para saque:");
             // Limpar o buffer do scanner antes de ler
             if (scanner.hasNextLine()) {
                 scanner.nextLine(); // Consumir a quebra de linha pendente
             }
-        var pix = scanner.nextLine().trim(); // Usar nextLine() para capturar toda a entrada e trim() para remover espaços
+            var pix = scanner.nextLine().trim(); // Usar nextLine() para capturar toda a entrada e trim() para remover espaços
             if (pix.isEmpty()) {
                 System.out.println("Erro: A chave PIX nao pode estar vazia.");
                 return;
@@ -201,17 +227,20 @@ public class Main {
                 return;
             }
 
-        try {
-            accountRepository.withdraw(pix, amount);
-            System.out.println("\n--------------- Saque realizado com sucesso ---------------\n");
-        } catch (NoFundsEnoughException | AccountNotFoundException ex) {
-            System.out.println(ex.getMessage());
-        }
+            try {
+                accountRepository.withdraw(pix, amount);
+                System.out.println("\n--------------- Saque realizado com sucesso ---------------\n");
+            } catch (NoFundsEnoughException | AccountNotFoundException ex) {
+                System.out.println(ex.getMessage());
+            }
         } catch (Exception e) {
             System.out.println("Erro inesperado: " + e.getMessage());
         }
     }
 
+    /**
+     * Realiza uma transferência PIX entre contas.
+     */
     private static void transferToAccount() {
         try {
             System.out.println("Informe a chave pix da conta de origem:");
@@ -269,6 +298,9 @@ public class Main {
         }
     }
 
+    /**
+     * Lista todas as contas cadastradas no sistema.
+     */
     private static void accountList() {
         try {
             System.out.println("\n--------------- Contas ---------------");
@@ -295,6 +327,9 @@ public class Main {
         }
     }
 
+    /**
+     * Cria uma nova carteira de investimento vinculada a uma conta.
+     */
     private static void createWalletInvestment() {
         try {
             System.out.println("Informe a chave pix da conta:");
@@ -370,6 +405,10 @@ public class Main {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Cadastra um novo tipo de investimento no sistema.
+     */
     private static void createInvestment() {
         try {
             System.out.println("Informe o nome do investimento:");
@@ -453,6 +492,9 @@ public class Main {
         }
     }
 
+    /**
+     * Realiza uma aplicação em um investimento existente.
+     */
     private static void applyInvestment() {
         try {
             System.out.println("Informe a chave pix da conta para investimento:");
@@ -510,6 +552,9 @@ public class Main {
         }
     }
 
+    /**
+     * Realiza o resgate de um investimento existente.
+     */
     private static void rescueInvestment() {
         try {
             System.out.println("Informe a chave pix da conta para resgate:");
@@ -568,6 +613,9 @@ public class Main {
         }
     }
 
+    /**
+     * Atualiza os rendimentos de todas as carteiras de investimento.
+     */
     private static void updateYield() {
         try {
             System.out.println("Confirma a atualização dos rendimentos? (S/N)");
@@ -608,6 +656,9 @@ public class Main {
         }
     }
 
+    /**
+     * Consulta carteiras de investimento, com opção de filtro por chave PIX.
+     */
     private static void consultWalletInvestment() {
         try {
             System.out.println("Deseja filtrar por chave PIX? (S/N)");
@@ -660,6 +711,9 @@ public class Main {
         }
     }
 
+    /**
+     * Lista todos os tipos de investimento disponíveis no sistema.
+     */
     private static void listTypeInvestment() {
         try {
             System.out.println("Deseja listar todos os tipos de investimento? (S/N)");
@@ -709,6 +763,9 @@ public class Main {
         }
     }
 
+    /**
+     * Lista todas as carteiras de investimento do sistema.
+     */
     private static void listWalletInvestment() {
         try {
             System.out.println("Deseja listar todas as carteiras de investimento? (S/N)");
@@ -761,6 +818,9 @@ public class Main {
         }
     }
 
+    /**
+     * Exibe o histórico de transações e extrato de uma conta.
+     */
     private static void checkHistory() {
         try {
             System.out.println("Informe a chave pix da conta para verificar extrato:");
@@ -817,5 +877,4 @@ public class Main {
             System.out.println("Erro inesperado: " + ex.getMessage());
         }
     }
-
 }
