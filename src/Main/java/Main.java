@@ -1,11 +1,14 @@
 import exception.*;
 import model.AccountWallet;
 import model.BankService;
+import model.InvestmentWallet;
 import model.MoneyAudit;
 import repository.AccountRepository;
 import repository.InvestmentRepository;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.time.format.DateTimeFormatter.ISO_DATE_TIME;
@@ -96,6 +99,10 @@ public class Main {
                     }
 
                     amount = Long.parseLong(numericValue);
+                    if (amount <= 0) {
+                        System.err.println("Erro: O valor do investimento deve ser positivo");
+                        continue;
+                    }
                     validAmount = true;
 
                 } catch (NumberFormatException e) {
@@ -124,45 +131,48 @@ public class Main {
 
     private static void deposit() {
         try {
-            System.out.println("Informe a chave PIX da conta para deposito:");
-            String pix = scanner.next();
+            System.out.println("Informe a chave pix da conta para depósito:");
+            // Limpar o buffer do scanner antes de ler
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir a quebra de linha pendente
+            }
+            String pix = scanner.nextLine().trim();
 
-            System.out.println("Informe o valor que sera depositado:");
+            if (pix.isEmpty()) {
+                System.out.println("Erro: A chave PIX não pode estar vazia.");
+                return;
+            }
 
-            // Verificação mais robusta da entrada
-            while (!scanner.hasNextLong()) {
-                System.err.println("Erro: Valor invalido. Tente novamente Digite apenas numeros.");
-                scanner.next(); // Descarta a entrada inválida
-                System.out.println("Informe o valor que sera depositado:");
+            System.out.println("Informe o valor que será depositado:");
+            if (!scanner.hasNextLong()) {
+                System.out.println("Erro: Digite um valor válido.");
+                scanner.nextLine(); // Limpar o buffer inválido
+                return;
             }
 
             long amount = scanner.nextLong();
             scanner.nextLine(); // Limpa o buffer
 
             if (amount <= 0) {
-                throw new IllegalArgumentException("O valor do deposito deve ser positivo.");
+                System.out.println("Erro: O valor deve ser positivo maior que zero.");
+                return;
             }
-            // Formatando a descrição do depósito inicial com o valor
+
+            // Formatando a descrição do depósito
             String depositDescription = "Depósito de: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
             accountRepository.deposit(pix, amount, depositDescription);
-            System.out.println("\n--------------- Deposito realizado com sucesso ---------------\n");
-        }
-        catch (AccountNotFoundException ex) {
-            System.err.println("Erro: Conta nao encontrada. " + ex.getMessage());
-        }
-        catch (PixInUseException ex) {
-            System.err.println("Erro: Chave PIX invalida. " + ex.getMessage());
-        }
-        catch (IllegalArgumentException ex) {
-            System.err.println("Erro: " + ex.getMessage());
-        }
-        catch (Exception ex) {
-            System.err.println("Erro inesperado durante o deposito: " + ex.getMessage());
+            System.out.println("\n--------------- Depósito realizado com sucesso ---------------\n");
+
+        } catch (AccountNotFoundException ex) {
+            System.err.println("Erro: Conta não encontrada. " + ex.getMessage());
+        } catch (PixInUseException ex) {
+            System.err.println("Erro: Chave PIX inválida. " + ex.getMessage());
+        } catch (NumberFormatException e) {
+            System.err.println("Erro: Valor numérico muito grande ou inválido");
+            System.err.println("Por favor, informe um valor válido (ex: 10000)");
+        } catch (Exception ex) {
+            System.err.println("Erro inesperado durante o depósito: " + ex.getMessage());
             ex.printStackTrace();
-            // Garante que o scanner esteja em estado válido
-            if (scanner != null) {
-                scanner.nextLine();
-            }
         }
     }
 
@@ -202,268 +212,553 @@ public class Main {
         }
     }
 
-    private static void transferToAccount(){
-        System.out.println("Informe a chave pix da conta de origem:");
-        var source = scanner.next();
-        System.out.println("Informe a chave pix da conta de destino:");
-        var target = scanner.next();
-        System.out.println("Informe o valor que sera depositado: ");
-        var amount = scanner.nextLong();
-        // Formatando a descrição do depósito inicial com o valor
-        String transfDescription = " R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
-        try{
+    private static void transferToAccount() {
+        try {
+            System.out.println("Informe a chave pix da conta de origem:");
+            // Limpar o buffer do scanner antes de ler
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir a quebra de linha pendente
+            }
+            String source = scanner.nextLine().trim();
+
+            if (source.isEmpty()) {
+                System.out.println("Erro: A chave PIX de origem não pode estar vazia.");
+                return;
+            }
+
+            System.out.println("Informe a chave pix da conta de destino:");
+            String target = scanner.nextLine().trim();
+
+            if (target.isEmpty()) {
+                System.out.println("Erro: A chave PIX de destino não pode estar vazia.");
+                return;
+            }
+
+            System.out.println("Informe o valor que será transferido:");
+            if (!scanner.hasNextLong()) {
+                System.out.println("Erro: Digite um valor válido.");
+                scanner.nextLine(); // Limpar o buffer inválido
+                return;
+            }
+
+            long amount = scanner.nextLong();
+            scanner.nextLine(); // Limpa o buffer
+
+            if (amount <= 0) {
+                System.out.println("Erro: O valor deve ser positivo maior que zero.");
+                return;
+            }
+
+            // Formatando a descrição da transferência
+            String transfDescription = " R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
             accountRepository.transferMoney(source, target, amount, transfDescription);
-        } catch (AccountNotFoundException ex){
-            System.out.println(ex.getMessage());
+
+
+        } catch (AccountNotFoundException ex) {
+            System.err.println("Erro: " + ex.getMessage());
+        } catch (NoFundsEnoughException ex) {
+            System.err.println("Erro: Saldo insuficiente para transferência. " + ex.getMessage());
+        } catch (PixInUseException ex) {
+            System.err.println("Erro: Chave PIX inválida. " + ex.getMessage());
+        } catch (NumberFormatException e) {
+            System.err.println("Erro: Valor numérico muito grande ou inválido");
+            System.err.println("Por favor, informe um valor válido (ex: 10000)");
+        } catch (Exception ex) {
+            System.err.println("Erro inesperado durante a transferência: " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
-    private static void accountList(){
-        System.out.println("\n--------------- Contas ---------------");
-        accountRepository.list().forEach(account ->
-                System.out.println("AccountWallet{pix=" + account.getPix() +
-                        ", balance=R$" + (account.getBalance() / 100) +
-                        "," + String.format("%02d", account.getBalance() % 100) + "}")
-        );
-        System.out.println("--------------------------------------\n");
+    private static void accountList() {
+        try {
+            System.out.println("\n--------------- Contas ---------------");
+
+            // Verifica se há contas para listar
+            var accounts = accountRepository.list();
+
+            if (accounts.isEmpty()) {
+                System.out.println("Nenhuma conta cadastrada.");
+            } else {
+                accounts.forEach(account -> {
+                    String formattedBalance = "R$" + (account.getBalance() / 100) +
+                            "," + String.format("%02d", account.getBalance() % 100);
+                    System.out.printf("AccountWallet{pix=%s, balance=%s}%n",
+                            account.getPix(), formattedBalance);
+                });
+            }
+
+            System.out.println("--------------------------------------\n");
+
+        } catch (Exception ex) {
+            System.err.println("Erro ao listar contas: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
 
     private static void createWalletInvestment() {
         try {
             System.out.println("Informe a chave pix da conta:");
-            // Limpar buffer do scanner
+            // Padrão: limpeza consistente do buffer
             if (scanner.hasNextLine()) {
                 scanner.nextLine();
             }
-            var pix = scanner.nextLine().trim();
+            String pix = scanner.nextLine().trim();
 
+            // Padrão: validação direta com return (igual ao withdraw)
             if (pix.isEmpty()) {
-                throw new IllegalArgumentException("Nenhuma chave Pix válida foi informada");
+                System.out.println("Erro: A chave PIX não pode estar vazia.");
+                return;
             }
 
-            int investmentId = 0;
-            boolean validInput = false;
-
-            while (!validInput) {
-                try {
-                    System.out.println("Informe o identificador do investimento:");
-                    String input = scanner.nextLine().trim();
-
-                    if (input.isEmpty()) {
-                        System.err.println("Erro: O ID do investimento não pode estar vazio");
-                        continue;
-                    }
-
-                    investmentId = Integer.parseInt(input);
-
-                    if (investmentId <= 0) {
-                        System.err.println("Erro: O ID do investimento deve ser um número positivo");
-                        continue;
-                    }
-
-                    validInput = true;
-                } catch (NumberFormatException e) {
-                    System.err.println("Erro: O ID do investimento deve ser um número válido");
-                    System.err.println("Por favor, digite apenas números (ex: 1, 2, 3...)");
-                }
+            System.out.println("Informe o identificador do investimento:");
+            // Padrão: verificação do tipo antes de ler (como no withdraw)
+            if (!scanner.hasNextInt()) {
+                System.out.println("Erro: Digite um ID válido (número inteiro).");
+                scanner.nextLine();
+                return;
             }
 
-            var account = accountRepository.findByPix(pix);
-            var investment = investmentRepository.findById(investmentId);
+            int investmentId = scanner.nextInt();
+            scanner.nextLine(); // Padrão: limpeza pós leitura numérica
 
-            // Formatando a descrição do investimento inicial
-            String investmentDescription = "Aplicação inicial em investimento " + investmentId +
-                    " no valor de R$" + (investment.initialFunds() / 100) +
-                    "," + String.format("%02d", investment.initialFunds() % 100);
-            var investmentWallet = investmentRepository.initInvestment(account, investmentId);
+            // Padrão: validação de valor positivo
+            if (investmentId <= 0) {
+                System.out.println("Erro: O ID deve ser maior que zero.");
+                return;
+            }
 
-            System.out.println("\n--------------- Carteira de Investimento Criada com Sucesso ---------------");
-            System.out.println("Conta: " + account.getPix());
-            System.out.println("Investimento ID: " + investmentId);
-            System.out.println("Investimento nome: " + investment.nome());
-            System.out.println("Saldo inicial: R$" + (investmentWallet.getFunds() / 100) + "," +
-                    String.format("%02d", investmentWallet.getFunds() % 100));
-            System.out.println("---------------------------------------------------------------------------\n");
+            try {
+                // Padrão: operação principal em bloco try separado (como no withdraw)
+                var account = accountRepository.findByPix(pix);
+                var investment = investmentRepository.findById(investmentId);
 
-            // Adicionando registro formatado no histórico da conta
-            String accountDescription = "Criação de carteira de investimento ID " + investmentId +
-                    " com valor inicial de R$" + (investment.initialFunds() / 100) +
-                    "," + String.format("%02d", investment.initialFunds() % 100);
+                var investmentWallet = investmentRepository.initInvestment(account, investmentId);
 
-            account.getFinancialTransactions().add(new MoneyAudit(
-                    UUID.randomUUID(),
-                    BankService.ACCOUNT,
-                    accountDescription,
-                    OffsetDateTime.now()
-            ));
+                // Formatação mantida mas seguindo o padrão de mensagens
+                String formattedValue = "R$" + (investment.initialFunds() / 100) + "," +
+                        String.format("%02d", investment.initialFunds() % 100);
 
-        } catch (IllegalArgumentException e) {
-            System.err.println("Erro na criação da carteira de investimento: " + e.getMessage());
-            System.err.println("Por favor, tente novamente com dados válidos");
-        } catch (AccountNotFoundException e) {
-            System.err.println("Erro: Conta não encontrada. " + e.getMessage());
-        } catch (AccountWithInvestmentException e) {
-            System.err.println("Erro: " + e.getMessage());
-            System.err.println("Cada conta pode ter apenas uma carteira de investimento");
-        } catch (InvestmentNotFoundException e) {
-            System.err.println("Erro: " + e.getMessage());
-            System.err.println("Verifique o ID do investimento e tente novamente");
+                System.out.println("\n--------------- Operação realizada com sucesso ---------------");
+                System.out.println("Tipo: Criação de Carteira de Investimento");
+                System.out.println("Conta: " + account.getPix());
+                System.out.println("Investimento: " + investment.nome() + " (ID: " + investmentId + ")");
+                System.out.println("Valor Inicial: " + formattedValue);
+                System.out.println("------------------------------------------------------------\n");
+
+                // Histórico (mantido da versão original)
+                String description = "Carteira investimento ID " + investmentId +
+                        " - Valor inicial: " + formattedValue;
+                account.getFinancialTransactions().add(new MoneyAudit(
+                        UUID.randomUUID(),
+                        BankService.ACCOUNT,
+                        description,
+                        OffsetDateTime.now()
+                ));
+
+            } catch (AccountNotFoundException e) {
+                System.out.println("Erro: " + e.getMessage()); // Padrão: println igual ao withdraw
+            } catch (AccountWithInvestmentException e) {
+                System.out.println("Erro: " + e.getMessage());
+            } catch (InvestmentNotFoundException e) {
+                System.out.println("Erro: " + e.getMessage());
+            } catch (NoFundsEnoughException e) {
+                System.out.println("Erro: " + e.getMessage());
+            }
+
         } catch (Exception e) {
-            System.err.println("Erro inesperado ao criar carteira de investimento: " + e.getMessage());
+            System.out.println("Erro inesperado: " + e.getMessage()); // Padrão igual ao withdraw
             e.printStackTrace();
         }
     }
-
-    private static void createInvestment(){
+    private static void createInvestment() {
         try {
-            System.out.println("Informe o nome");
-            var nome = Arrays.stream(scanner.next().split(";")).toList();
+            System.out.println("Informe o nome do investimento:");
+            // Limpar o buffer do scanner antes de ler
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir a quebra de linha pendente
+            }
+            var input = scanner.nextLine().trim(); // Usar nextLine() para capturar toda a entrada
 
-            if (nome.isEmpty()) {
-                throw new IllegalArgumentException("Nenhum nome valido foi informado");
+            if (input.isEmpty()) {
+                System.out.println("Erro: O nome não pode estar vazio.");
+                return;
             }
 
-            // Verifica se há chaves duplicadas
-            Set<String> uniqueKeys = new HashSet<>();
-            for (String nomeInvestimento : nome) {
-                if (!uniqueKeys.add(nomeInvestimento)) {
-                    throw new IllegalArgumentException("Chave Pix duplicada encontrada: " + nomeInvestimento);
+            var nomes = Arrays.stream(input.split(";"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+
+            if (nomes.isEmpty()) {
+                System.out.println("Erro: Nenhum nome válido foi informado.");
+                return;
+            }
+
+            // Verifica nomes duplicados
+            Set<String> uniqueNames = new HashSet<>();
+            for (String nome : nomes) {
+                if (!uniqueNames.add(nome)) {
+                    System.out.println("Erro: Nome duplicado encontrado: " + nome);
+                    return;
                 }
             }
 
-        System.out.println("Informe a taxa do investimento");
-        var tax = scanner.nextInt();
-        System.out.println("Informe o valor inicial de deposito");
-        var initialFunds = scanner.nextLong();
-        var investment = investmentRepository.create(tax, initialFunds, String.valueOf(nome));
-        System.out.println("\n------------------------- investimento criado -------------------------\n" + investment);
-        System.out.println("-----------------------------------------------------------------------\n");
+            System.out.println("Informe a taxa do investimento:");
+            if (!scanner.hasNextInt()) {
+                System.out.println("Erro: Digite um valor válido para a taxa (número inteiro).");
+                scanner.nextLine(); // Limpar o buffer inválido
+                return;
+            }
+            var tax = scanner.nextInt();
+            scanner.nextLine(); // Limpar o buffer
 
-        }catch (IllegalArgumentException e) {
-            System.err.println("Erro na criação do nome do investimento: " + e.getMessage());
-            System.err.println("Por favor, tente novamente com dados válidos");
+            if (tax <= 0) {
+                System.out.println("Erro: A taxa deve ser maior que zero.");
+                return;
+            }
+
+            System.out.println("Informe o valor inicial de depósito:");
+            if (!scanner.hasNextLong()) {
+                System.out.println("Erro: Digite um valor válido.");
+                scanner.nextLine(); // Limpar o buffer inválido
+                return;
+            }
+            var initialFunds = scanner.nextLong();
+            scanner.nextLine(); // Limpar o buffer
+
+            if (initialFunds <= 0) {
+                System.out.println("Erro: O valor deve ser maior que zero.");
+                return;
+            }
+
+            try {
+                var investment = investmentRepository.create(tax, initialFunds, String.join(";", nomes));
+                // Formatando o valor para exibição
+                String formattedValue = "R$" + (initialFunds / 100) + "," + String.format("%02d", initialFunds % 100);
+
+                System.out.println("\n--------------- Investimento criado com sucesso ---------------");
+                System.out.println("ID: " + investment.id());
+                System.out.println("Nome(s): " + String.join(", ", nomes));
+                System.out.println("Taxa: " + tax + "%");
+                System.out.println("Valor Inicial: " + formattedValue);
+                System.out.println("--------------------------------------------------------------\n");
+
+            } catch (IllegalArgumentException e) {
+                System.out.println("Erro: " + e.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro inesperado: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private static void applyInvestment() {
         try {
             System.out.println("Informe a chave pix da conta para investimento:");
-            // Limpar buffer do scanner
+            // Padrão: limpeza consistente do buffer
             if (scanner.hasNextLine()) {
                 scanner.nextLine();
             }
             var pix = scanner.nextLine().trim();
 
+            // Padrão: validação direta com return
             if (pix.isEmpty()) {
-                throw new IllegalArgumentException("A chave PIX não pode estar vazia");
+                System.out.println("Erro: A chave PIX não pode estar vazia.");
+                return;
             }
 
-            long amount = 0;
-            boolean validAmount = false;
-
-            while (!validAmount) {
-                try {
-                    System.out.println("Informe o valor que será investido (apenas números):");
-                    System.out.println("Exemplo: 5000009 (para cinquenta mil e nove centavos)");
-
-                    String input = scanner.nextLine().trim();
-
-                    // Remove todos os caracteres não numéricos
-                    String numericValue = input.replaceAll("[^0-9]", "");
-
-                    if (numericValue.isEmpty()) {
-                        System.err.println("Erro: Nenhum valor numérico foi informado");
-                        continue;
-                    }
-
-                    amount = Long.parseLong(numericValue);
-
-                    if (amount <= 0) {
-                        System.err.println("Erro: O valor do investimento deve ser positivo");
-                        continue;
-                    }
-
-                    validAmount = true;
-
-                } catch (NumberFormatException e) {
-                    System.err.println("Erro: Valor numérico muito grande ou inválido");
-                    System.err.println("Por favor, informe um valor válido (ex: 10000)");
-                }
+            System.out.println("Informe o valor que será investido:");
+            // Padrão: verificação do tipo antes de ler
+            if (!scanner.hasNextLong()) {
+                System.out.println("Erro: Digite um valor válido.");
+                scanner.nextLine();
+                return;
             }
 
-            // Formatando a descrição do investimento
-            String investmentDescription = "Aporte em Investimento de: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
+            var amount = scanner.nextLong();
+            scanner.nextLine(); // Padrão: limpeza pós leitura numérica
 
-            investmentRepository.deposit(pix, amount, investmentDescription);
+            // Padrão: validação de valor positivo
+            if (amount <= 0) {
+                System.out.println("Erro: O valor deve ser maior que zero.");
+                return;
+            }
 
-            System.out.println("\n--------------- Investimento Realizado com Sucesso ---------------");
-            System.out.println("Conta PIX: " + pix);
-            System.out.println("Valor investido: R$" + (amount / 100) + "," + String.format("%02d", amount % 100));
-            System.out.println("------------------------------------------------------------------\n");
+            try {
+                // Padrão: operação principal em bloco try separado
+                String description = "Aporte em Investimento de: R$" +
+                        (amount / 100) + "," +
+                        String.format("%02d", amount % 100);
 
-        } catch (IllegalArgumentException e) {
-            System.err.println("Erro no investimento: " + e.getMessage());
-            System.err.println("Por favor, tente novamente com dados válidos");
-        } catch (WalletNotFoundException e) {
-            System.err.println("Erro: Carteira de investimento não encontrada. " + e.getMessage());
-            System.err.println("Verifique se a conta possui uma carteira de investimento criada");
-        } catch (AccountNotFoundException e) {
-            System.err.println("Erro: Conta não encontrada. " + e.getMessage());
-            System.err.println("Verifique a chave PIX informada");
+                investmentRepository.deposit(pix, amount, description);
+
+                System.out.println("\n--------------- Investimento realizado com sucesso ---------------");
+                System.out.println("Conta PIX: " + pix);
+                System.out.println("Valor: R$" + (amount / 100) + "," + String.format("%02d", amount % 100));
+                System.out.println("------------------------------------------------------------------\n");
+
+            } catch (WalletNotFoundException e) {
+                System.out.println("Erro: " + e.getMessage());
+            } catch (AccountNotFoundException e) {
+                System.out.println("Erro: " + e.getMessage());
+            }
+
         } catch (Exception e) {
-            System.err.println("Erro inesperado ao realizar investimento: " + e.getMessage());
+            System.out.println("Erro inesperado: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private static void rescueInvestment() {
         try {
-            System.out.println("Informe a chave pix da conta para resgate do investimento:");
-            var pix = scanner.next();
-            System.out.println("Informe o valor que sera sacado: ");
+            System.out.println("Informe a chave pix da conta para resgate:");
+            // Padronização: limpeza do buffer antes da leitura
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir quebra de linha pendente
+            }
+            var pix = scanner.nextLine().trim(); // Padrão nextLine() + trim()
+
+            // Validação padrão como no withdraw
+            if (pix.isEmpty()) {
+                System.out.println("Erro: A chave PIX não pode estar vazia.");
+                return;
+            }
+
+            System.out.println("Informe o valor que será resgatado:");
+            // Validação de tipo idêntica ao withdraw
+            if (!scanner.hasNextLong()) {
+                System.out.println("Erro: Digite um valor válido.");
+                scanner.nextLine(); // Limpar buffer inválido
+                return;
+            }
+
             var amount = scanner.nextLong();
-            String investmentDescription = "Resgate de investimento: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
-            investmentRepository.withdraw(pix, amount, investmentDescription);
-            System.out.println("\n--------------- Resgate de investimento realizado com sucesso ---------------\n");
-        } catch (NoFundsEnoughException | AccountNotFoundException ex) {
-            System.out.println(ex.getMessage());
-        }
-    }
+            scanner.nextLine(); // Limpeza padrão do buffer
 
-    private static void updateYield(){
+            // Validação de valor positivo idêntica
+            if (amount <= 0) {
+                System.out.println("Erro: O valor deve ser maior que zero.");
+                return;
+            }
 
-            investmentRepository.updateAmount();
-            System.out.println("\n--------------- Investimentos Reajustados ---------------\n");
-    }
+            try {
+                // Formatação mantida mas seguindo o padrão
+                String description = "Resgate de investimento: R$" +
+                        (amount / 100) + "," +
+                        String.format("%02d", amount % 100);
 
-    private static void consultWalletInvestment(){
-        try {
-            System.out.println("\n--------------- Investimentos Reajustados ---------------");
+                investmentRepository.withdraw(pix, amount, description);
 
-            investmentRepository.listWallets().forEach(wallet -> {
-                System.out.println("Conta PIX: " + wallet.getAccount().getPix().get(0)); // Pega a primeira chave PIX
-                System.out.println("Tipo de Investimento: " + wallet.getInvestment().nome());
-                System.out.println("Taxa aplicada: " + wallet.getInvestment().tax() + "%");
-                System.out.println("Saldo do Investimento: R$" + (wallet.getFunds() / 100) + "," +
-                        String.format("%02d", wallet.getFunds() % 100));
-                System.out.println("Saldo da Conta: R$" + (wallet.getAccount().getFunds() / 100) + "," +
-                        String.format("%02d", wallet.getAccount().getFunds() % 100));
-                System.out.println("---------------------------------------------------------");
-            });
+                // Mensagem de sucesso padronizada
+                System.out.println("\n--------------- Resgate realizado com sucesso ---------------");
+                System.out.println("Conta: " + pix);
+                System.out.println("Valor resgatado: R$" + (amount / 100) + "," +
+                        String.format("%02d", amount % 100));
+                System.out.println("------------------------------------------------------------\n");
 
-            System.out.println("---------------------------------------------------------\n");
+            } catch (NoFundsEnoughException | AccountNotFoundException ex) {
+                // Tratamento idêntico ao withdraw
+                System.out.println(ex.getMessage());
+            }
+
         } catch (Exception e) {
-            System.err.println("Erro ao atualizar investimentos: " + e.getMessage());
-            e.printStackTrace();
+            // Bloco catch padrão igual ao withdraw
+            System.out.println("Erro inesperado: " + e.getMessage());
         }
     }
 
-    private static void listTypeInvestment(){
-        investmentRepository.list().forEach(System.out::println);
+    private static void updateYield() {
+        try {
+            System.out.println("Confirma a atualização dos rendimentos? (S/N)");
+            // Padronização: limpeza do buffer antes da leitura
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir quebra de linha pendente
+            }
+            var confirmation = scanner.nextLine().trim().toUpperCase();
+
+            // Validação padrão como no withdraw
+            if (confirmation.isEmpty()) {
+                System.out.println("Erro: Confirmação não pode estar vazia.");
+                return;
+            }
+
+            if (!confirmation.equals("S")) {
+                System.out.println("Operação cancelada pelo usuário.");
+                return;
+            }
+
+            try {
+                // Operação principal
+                investmentRepository.updateAmount();
+
+                // Mensagem de sucesso padronizada
+                System.out.println("\n--------------- Rendimentos atualizados com sucesso ---------------");
+                System.out.println("Data: " + LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+                System.out.println("----------------------------------------------------------------\n");
+
+            } catch (Exception ex) {
+                // Tratamento padrão para erros na operação
+                System.out.println("Erro durante a atualização: " + ex.getMessage());
+            }
+
+        } catch (Exception e) {
+            // Bloco catch padrão para erros inesperados
+            System.out.println("Erro inesperado: " + e.getMessage());
+        }
     }
 
-    private static void listWalletInvestment(){
-        investmentRepository.listWallets().forEach(System.out::println);
+    private static void consultWalletInvestment() {
+        try {
+            System.out.println("Deseja filtrar por chave PIX? (S/N)");
+            // Padronização: limpeza do buffer antes da leitura
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir quebra de linha pendente
+            }
+            var filterOption = scanner.nextLine().trim().toUpperCase();
+
+            try {
+                List<InvestmentWallet> wallets = investmentRepository.listWallets();
+
+                System.out.println("\n--------------- Carteiras de Investimento ---------------");
+
+                if (wallets.isEmpty()) {
+                    System.out.println("Nenhuma carteira de investimento encontrada.");
+                } else {
+                    // Filtra por PIX se o usuário escolheu 'S'
+                    if (filterOption.equals("S")) {
+                        System.out.println("Informe a chave PIX para filtro:");
+                        var pixFilter = scanner.nextLine().trim();
+
+                        wallets = wallets.stream()
+                                .filter(w -> w.getAccount().getPix().contains(pixFilter))
+                                .toList();
+                    }
+
+                    wallets.forEach(wallet -> {
+                        System.out.println("Conta PIX: " + wallet.getAccount().getPix().get(0));
+                        System.out.println("Investimento: " + wallet.getInvestment().nome());
+                        System.out.println("Taxa: " + wallet.getInvestment().tax() + "%");
+                        System.out.println("Saldo Investido: R$" +
+                                (wallet.getFunds() / 100) + "," +
+                                String.format("%02d", wallet.getFunds() % 100));
+                        System.out.println("Saldo Disponível: R$" +
+                                (wallet.getAccount().getFunds() / 100) + "," +
+                                String.format("%02d", wallet.getAccount().getFunds() % 100));
+                        System.out.println("--------------------------------------------------");
+                    });
+                }
+
+                System.out.println("--------------------------------------------------------\n");
+
+            } catch (Exception e) {
+                System.out.println("Erro ao consultar investimentos: " + e.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    private static void listTypeInvestment() {
+        try {
+            System.out.println("Deseja listar todos os tipos de investimento? (S/N)");
+            // Padronização: limpeza do buffer antes da leitura
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir quebra de linha pendente
+            }
+            var confirmation = scanner.nextLine().trim().toUpperCase();
+
+            // Validação padrão como no withdraw
+            if (confirmation.isEmpty()) {
+                System.out.println("Erro: Confirmação não pode estar vazia.");
+                return;
+            }
+
+            if (!confirmation.equals("S")) {
+                System.out.println("Operação cancelada pelo usuário.");
+                return;
+            }
+
+            try {
+                var investments = investmentRepository.list();
+
+                System.out.println("\n--------------- Tipos de Investimento Disponíveis ---------------");
+
+                if (investments.isEmpty()) {
+                    System.out.println("Nenhum tipo de investimento cadastrado.");
+                } else {
+                    investments.forEach(investment -> {
+                        System.out.println("ID: " + investment.id());
+                        System.out.println("Nome: " + investment.nome());
+                        System.out.println("Taxa: " + investment.tax() + "%");
+                        System.out.println("Valor Mínimo: R$" + (investment.initialFunds() / 100) + "," +
+                                String.format("%02d", investment.initialFunds() % 100));
+                        System.out.println("--------------------------------------------------------");
+                    });
+                }
+
+                System.out.println("----------------------------------------------------------------\n");
+
+            } catch (Exception ex) {
+                System.out.println("Erro ao listar investimentos: " + ex.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    private static void listWalletInvestment() {
+        try {
+            System.out.println("Deseja listar todas as carteiras de investimento? (S/N)");
+            // Padronização: limpeza do buffer antes da leitura
+            if (scanner.hasNextLine()) {
+                scanner.nextLine(); // Consumir quebra de linha pendente
+            }
+            var confirmation = scanner.nextLine().trim().toUpperCase();
+
+            // Validação padrão como no withdraw
+            if (confirmation.isEmpty()) {
+                System.out.println("Erro: Confirmação não pode estar vazia.");
+                return;
+            }
+
+            if (!confirmation.equals("S")) {
+                System.out.println("Operação cancelada pelo usuário.");
+                return;
+            }
+
+            try {
+                var wallets = investmentRepository.listWallets();
+
+                System.out.println("\n--------------- Carteiras de Investimento ---------------");
+
+                if (wallets.isEmpty()) {
+                    System.out.println("Nenhuma carteira de investimento encontrada.");
+                } else {
+                    wallets.forEach(wallet -> {
+                        System.out.println("Conta PIX: " + wallet.getAccount().getPix().get(0));
+                        System.out.println("Tipo de Investimento: " + wallet.getInvestment().nome());
+                        System.out.println("Taxa: " + wallet.getInvestment().tax() + "%");
+                        System.out.println("Saldo Investido: R$" + (wallet.getFunds() / 100) + "," +
+                                String.format("%02d", wallet.getFunds() % 100));
+                        System.out.println("Saldo Disponível: R$" +
+                                (wallet.getAccount().getFunds() / 100) + "," +
+                                String.format("%02d", wallet.getAccount().getFunds() % 100));
+                        System.out.println("--------------------------------------------------");
+                    });
+                }
+
+                System.out.println("--------------------------------------------------------\n");
+
+            } catch (Exception ex) {
+                System.out.println("Erro ao listar carteiras: " + ex.getMessage());
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro inesperado: " + e.getMessage());
+        }
     }
 
     private static void checkHistory() {
@@ -486,9 +781,17 @@ public class Main {
                 var transactions = account.getFinancialTransactions();
 
                 if (transactions.isEmpty()) {
-                    System.out.println("Nenhum histórico encontrado para esta conta.");
-                    return;
+                    System.out.println("Nenhuma transação registrada.");
+                } else {
+                    System.out.println("Histórico:");
+                    System.out.println("------------------------------------------------");
+                    transactions.forEach(t -> System.out.println(
+                            t.createdAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + " | " +
+                                    t.description()
+                    ));
                 }
+
+                System.out.println("------------------------------------------------\n");
 
                 System.out.println("\n=== EXTRATO BANCÁRIO ===");
                 System.out.println("Chave PIX: " + pix);
