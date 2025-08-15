@@ -1,6 +1,6 @@
 * Riachuelo Boot Camp 2025
   
-* 🏦 Sistema Bancário com Investimentos PIX
+* 🏦 Sistema Bancário com Transações via PIX
 * Visão Geral
 * Sistema Java completo para gerenciamento bancário com:
 * Operações financeiras tradicionais (depósito, saque, transferência PIX)
@@ -18,9 +18,9 @@
 * Collections Framework (List, Set, Map)
 * java.time para registro temporal preciso
 * Scanner para interface console interativa
+
   
 * 📚 Estrutura de Classes
-*  
 * Hierarquia Principal
  
 * Wallet (abstract)
@@ -73,6 +73,7 @@
 * 13 - Listar tipos de investimento
 * 14 - Listar todas as carteiras de investimento
 * 15 - Sair do sistema
+
   
 * 🎯 Funcionalidades Implementadas
 * ✔️ Cadastro de contas com múltiplas chaves PIX
@@ -84,13 +85,14 @@
 * ✔️ Extrato detalhado com histórico de transações
 * ✔️ Tratamento robusto de erros e validações
   
+
 * 📝 Exemplo de Uso
  
 * ============ MENU PIX BANK ============
 * Escolha uma opção: 1
  
-* Informe as chaves pix (separadas por ';' Exemplo: CPF00000000000;Email@meu.com;tel999999999
-* CPF12345678900;email@exemplo.com;tel11999999999
+* Informe as chaves pix (separadas por ';' Exemplo: CPF00000000000; Email@meu.com; tel999999999
+* CPF12345678900; email@exemplo.com; tel11999999999
  
 * Informe o valor inicial de depósito (apenas números)
 * Exemplo: 5000009 (para cinquenta mil e nove centavos)
@@ -103,6 +105,8 @@
 * Todos os valores são armazenados em centavos (100 = R$1,00)
 * Dados são mantidos apenas em memória
 * Não há persistência entre execuções
+
+
  
 ````mermaid
 classDiagram
@@ -253,4 +257,4 @@ classDiagram
 * Implementar novas classes de modelo se necessário
 
 * Fontes da versão educacional original:
-* https://github.com/cami-la/desafio-poo-dio.git
+* https://github.com/digitalinnovationone/java-bank/tree/e63f83fe928e3ce0e753ffe7c54209c53a59edc6/src/main/java/br/com/dio
