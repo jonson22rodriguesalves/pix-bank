@@ -39,17 +39,14 @@ public class InvestmentRepository {
         return wallet;
     }
 
-    public InvestmentWallet deposit(final String pix, final long funds) {
+    public InvestmentWallet deposit(final String pix, final long funds, final String investmentDescription) {
         var wallet = findWalletByAccountPix(pix);
 
-        // Descrição para a operação na conta origem
-        String withdrawalDescription = "Aplicação em investimento via PIX conta: " + pix + "\n Aporte de R$ " + (funds) + "," + String.format("%02d", funds%100);
-
         // Remove o valor da conta com registro no histórico
-        long transferredAmount = wallet.getAccount().reduceMoney(funds, withdrawalDescription);
+        long transferredAmount = wallet.getAccount().reduceMoney(funds, investmentDescription);
 
         // Descrição para a operação no investimento
-        String depositDescription = "Aporte de R$" + (funds/100) + "," + String.format("%02d", funds%100);
+        String depositDescription = "Aporte de R$" + (funds / 100) + "," + String.format("%02d", funds % 100);
 
         // Adiciona na carteira de investimento
         wallet.addMoney(transferredAmount, depositDescription);
@@ -63,7 +60,8 @@ public class InvestmentRepository {
 
         // Remove o valor da carteira de investimento e devolve para a conta
         long withdrawnAmount = wallet.reduceMoney(funds);
-        wallet.getAccount().addMoney(withdrawnAmount, "saque de investimentos");
+        // Usa a descrição formatada para o depósito na conta
+        wallet.getAccount().addMoney(withdrawnAmount, investmentDescription);
 
         if (wallet.getFunds() == 0) {
             wallets.remove(wallet);

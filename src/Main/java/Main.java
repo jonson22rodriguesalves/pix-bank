@@ -49,27 +49,14 @@ public class Main {
                 case 8 -> createInvestment();
                 case 9 -> investment();
                 case 10 -> rescueInvestment();
-                case 11 ->{
-                    investmentRepository.updateAmount();
-                    System.out.println("Investimentos reajustados");
-                }
-                case 12 -> investmentRepository.list().forEach(System.out::println);
-                case 13 -> investmentRepository.listWallets().forEach(System.out::println);
+                case 11 -> atualizarInvestment();
+                case 12 -> listarModalidadeInvestment();
+                case 13 -> listarWalletInvestment();
                 case 14 -> System.exit(0);
                 default -> System.out.println("Opção inválida");
 
             }
         }
-    }
-
-    private static void listarConta(){
-        System.out.println("\n--------------- Contas ---------------");
-        accountRepository.list().forEach(account ->
-                System.out.println("AccountWallet{pix=" + account.getPix() +
-                        ", balance=R$" + (account.getBalance() / 100) +
-                        "," + String.format("%02d", account.getBalance() % 100) + "}")
-        );
-        System.out.println("--------------------------------------\n");
     }
 
     private static void createAccount() {
@@ -228,6 +215,16 @@ public class Main {
         } catch (AccountNotFoundException ex){
             System.out.println(ex.getMessage());
         }
+    }
+
+    private static void listarConta(){
+        System.out.println("\n--------------- Contas ---------------");
+        accountRepository.list().forEach(account ->
+                System.out.println("AccountWallet{pix=" + account.getPix() +
+                        ", balance=R$" + (account.getBalance() / 100) +
+                        "," + String.format("%02d", account.getBalance() % 100) + "}")
+        );
+        System.out.println("--------------------------------------\n");
     }
 
     private static void createWalletInvestment() {
@@ -394,9 +391,9 @@ public class Main {
             }
 
             // Formatando a descrição do investimento
-            String investmentDescription = "Investimento de: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
+            String investmentDescription = "Aporte em Investimento de: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
 
-            investmentRepository.deposit(pix, amount);
+            investmentRepository.deposit(pix, amount, investmentDescription);
 
             System.out.println("\n--------------- Investimento Realizado com Sucesso ---------------");
             System.out.println("Conta PIX: " + pix);
@@ -418,18 +415,32 @@ public class Main {
         }
     }
 
-    private static void rescueInvestment(){
-        System.out.println("Informe a chave pix da conta para resgate do investimento:");
-        var pix = scanner.next();
-        System.out.println("Informe o valor que sera sacado: ");
-        var amount = scanner.nextLong();
-        // Formatando a descrição do investimento
-        String investmentDescription = "Investimento de: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
+    private static void rescueInvestment() {
         try {
+            System.out.println("Informe a chave pix da conta para resgate do investimento:");
+            var pix = scanner.next();
+            System.out.println("Informe o valor que sera sacado: ");
+            var amount = scanner.nextLong();
+            String investmentDescription = "Resgate de investimento: R$" + (amount / 100) + "," + String.format("%02d", amount % 100);
             investmentRepository.withdraw(pix, amount, investmentDescription);
+            System.out.println("\n--------------- Resgate de investimento realizado com sucesso ---------------\n");
         } catch (NoFundsEnoughException | AccountNotFoundException ex) {
             System.out.println(ex.getMessage());
         }
+    }
+
+    private static void atualizarInvestment(){
+
+            investmentRepository.updateAmount();
+            System.out.println("Investimentos reajustados");
+    }
+
+    private static void listarModalidadeInvestment(){
+        investmentRepository.list().forEach(System.out::println);
+    }
+
+    private static void listarWalletInvestment(){
+        investmentRepository.listWallets().forEach(System.out::println);
     }
 
     private static void checkHistory() {
